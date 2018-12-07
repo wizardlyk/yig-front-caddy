@@ -22,6 +22,7 @@ import (
 
 	"github.com/journeymidnight/yig-front-caddy"
 	"github.com/journeymidnight/yig-front-caddy/caddyhttp/httpserver"
+	"strings"
 )
 
 func init() {
@@ -33,9 +34,10 @@ func init() {
 
 // Logger is a basic request logging middleware.
 type Logger struct {
-	Next      httpserver.Handler
-	Rules     []*Rule
-	ErrorFunc func(http.ResponseWriter, *http.Request, int) // failover error handler
+	Next       httpserver.Handler
+	Rules      []*Rule
+	S3Endpoint string
+	ErrorFunc  func(http.ResponseWriter, *http.Request, int) // failover error handler
 }
 
 func (l Logger) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error) {
@@ -47,6 +49,8 @@ func (l Logger) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error) {
 			// Attach the Replacer we'll use so that other middlewares can
 			// set their own placeholders if they want to.
 			rep := httpserver.NewReplacer(r, responseRecorder, CommonLogEmptyValue)
+			bucketName , _ := getBucketAndObjectInfoFromRequest(l.S3Endpoint, r)
+			rep.Set("bucket_name", bucketName)
 			responseRecorder.Replacer = rep
 
 			// Bon voyage, request!
@@ -115,3 +119,24 @@ const (
 	// DefaultLogFormat is the default log format.
 	DefaultLogFormat = CommonLogFormat
 )
+
+func getBucketAndObjectInfoFromRequest(s3Endpoint string, r *http.Request) (bucketName string, objectName string) {
+	splits := strings.SplitN(r.URL.Path[1:], "/", 2)
+	v := strings.Split(r.Host, ":")
+	hostWithOutPort := v[0]
+	if strings.HasSuffix(hostWithOutPort, "."+s3Endpoint) {
+		bucketName = strings.TrimSuffix(hostWithOutPort, "."+s3Endpoint)
+		if len(splits) == 1 {
+			objectName = splits[0]
+		}
+	} else {
+		if len(splits) == 1 {
+			bucketName = splits[0]
+		}
+		if len(splits) == 2 {
+			bucketName = splits[0]
+			objectName = splits[1]
+		}
+	}
+	return
+}

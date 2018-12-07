@@ -68,7 +68,6 @@ type replacer struct {
 	responseRecorder   *ResponseRecorder
 	request            *http.Request
 	requestBody        *limitWriter
-	s3Endpoint         string
 }
 
 type limitWriter struct {
@@ -505,9 +504,6 @@ func (r *replacer) getSubstitution(key string) string {
 			return cert.NotBefore.Format("Jan 02 15:04:05 2006 MST")
 		}
 		return r.emptyValue
-	case "{bucket_name}":
-		bucketName, _ := getBucketAndObjectInfoFromRequest(r.s3Endpoint, r.request)
-		return bucketName
 	default:
 		// {labelN}
 		if strings.HasPrefix(key, "{label") {
@@ -534,27 +530,6 @@ func nanoToMilliseconds(d int64) int64 {
 // convertToMilliseconds returns the number of milliseconds in the given duration
 func convertToMilliseconds(d time.Duration) int64 {
 	return nanoToMilliseconds(d.Nanoseconds())
-}
-
-func getBucketAndObjectInfoFromRequest(s3Endpoint string, r *http.Request) (bucketName string, objectName string) {
-	splits := strings.SplitN(r.URL.Path[1:], "/", 2)
-	v := strings.Split(r.Host, ":")
-	hostWithOutPort := v[0]
-	if strings.HasSuffix(hostWithOutPort, "."+s3Endpoint) {
-		bucketName = strings.TrimSuffix(hostWithOutPort, "."+s3Endpoint)
-		if len(splits) == 1 {
-			objectName = splits[0]
-		}
-	} else {
-		if len(splits) == 1 {
-			bucketName = splits[0]
-		}
-		if len(splits) == 2 {
-			bucketName = splits[0]
-			objectName = splits[1]
-		}
-	}
-	return
 }
 
 // Set sets key to value in the r.customReplacements map.

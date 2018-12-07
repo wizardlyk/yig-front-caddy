@@ -24,7 +24,7 @@ import (
 
 // setup sets up the logging middleware.
 func setup(c *caddy.Controller) error {
-	rules, err := logParse(c)
+	rules, s3Endpoint, err := logParse(c)
 	if err != nil {
 		return err
 	}
@@ -36,15 +36,16 @@ func setup(c *caddy.Controller) error {
 	}
 
 	httpserver.GetConfig(c).AddMiddleware(func(next httpserver.Handler) httpserver.Handler {
-		return Logger{Next: next, Rules: rules, ErrorFunc: httpserver.DefaultErrorFunc}
+		return Logger{Next: next, Rules: rules, ErrorFunc: httpserver.DefaultErrorFunc, S3Endpoint: s3Endpoint}
 	})
 
 	return nil
 }
 
-func logParse(c *caddy.Controller) ([]*Rule, error) {
+func logParse(c *caddy.Controller) ([]*Rule, string, error) {
 	var rules []*Rule
 	var logExceptions []string
+	var s3Endpoint string
 	for c.Next() {
 		args := c.RemainingArgs()
 
@@ -62,7 +63,7 @@ func logParse(c *caddy.Controller) ([]*Rule, error) {
 			if what == "ipmask" {
 
 				if len(where) == 0 {
-					return nil, c.ArgErr()
+					return nil, "", c.ArgErr()
 				}
 
 				if where[0] != "" {
@@ -70,7 +71,7 @@ func logParse(c *caddy.Controller) ([]*Rule, error) {
 					ipv4 := net.ParseIP(ip4MaskStr).To4()
 
 					if ipv4 == nil {
-						return nil, c.Err("IPv4 Mask not valid IP Mask Format")
+						return nil, "", c.Err("IPv4 Mask not valid IP Mask Format")
 					} else {
 						ip4Mask = net.IPMask(ipv4)
 						ipMaskExists = true
@@ -83,7 +84,7 @@ func logParse(c *caddy.Controller) ([]*Rule, error) {
 					ipv6 := net.ParseIP(ip6MaskStr)
 
 					if ipv6 == nil {
-						return nil, c.Err("IPv6 Mask not valid IP Mask Format")
+						return nil, "", c.Err("IPv6 Mask not valid IP Mask Format")
 					} else {
 						ip6Mask = net.IPMask(ipv6)
 						ipMaskExists = true
@@ -100,11 +101,16 @@ func logParse(c *caddy.Controller) ([]*Rule, error) {
 			} else if httpserver.IsLogRollerSubdirective(what) {
 
 				if err := httpserver.ParseRoller(logRoller, what, where...); err != nil {
-					return nil, err
+					return nil, "", err
 				}
 
+			} else if what == "s3_endpoint" {
+				if len(where) == 0 {
+					return nil, "", c.ArgErr()
+				}
+				s3Endpoint = where[0]
 			} else {
-				return nil, c.ArgErr()
+				return nil, "", c.ArgErr()
 			}
 
 		}
@@ -129,7 +135,7 @@ func logParse(c *caddy.Controller) ([]*Rule, error) {
 			}
 		default:
 			// Maximum number of args in log directive is 3.
-			return nil, c.ArgErr()
+			return nil, "", c.ArgErr()
 		}
 
 		rules = appendEntry(rules, path, &Entry{
@@ -145,7 +151,7 @@ func logParse(c *caddy.Controller) ([]*Rule, error) {
 		})
 	}
 
-	return rules, nil
+	return rules, s3Endpoint, nil
 }
 
 func appendEntry(rules []*Rule, pathScope string, entry *Entry) []*Rule {
