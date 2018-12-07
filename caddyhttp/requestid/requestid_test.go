@@ -19,7 +19,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/mholt/caddy/caddyhttp/httpserver"
+	"github.com/journeymidnight/yig-front-caddy/caddyhttp/httpserver"
 )
 
 func TestRequestIDHandler(t *testing.T) {

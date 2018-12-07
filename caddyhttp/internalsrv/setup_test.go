@@ -17,8 +17,8 @@ package internalsrv
 import (
 	"testing"
 
-	"github.com/mholt/caddy"
-	"github.com/mholt/caddy/caddyhttp/httpserver"
+	"github.com/journeymidnight/yig-front-caddy"
+	"github.com/journeymidnight/yig-front-caddy/caddyhttp/httpserver"
 )
 
 func TestSetup(t *testing.T) {

@@ -17,7 +17,7 @@ package pprof
 import (
 	"testing"
 
-	"github.com/mholt/caddy"
+	"github.com/journeymidnight/yig-front-caddy"
 )
 
 func TestSetup(t *testing.T) {

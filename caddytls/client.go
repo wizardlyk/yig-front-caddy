@@ -25,8 +25,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mholt/caddy"
-	"github.com/mholt/caddy/telemetry"
+	"github.com/journeymidnight/yig-front-caddy"
+	"github.com/journeymidnight/yig-front-caddy/telemetry"
 	"github.com/xenolf/lego/acme"
 )
 

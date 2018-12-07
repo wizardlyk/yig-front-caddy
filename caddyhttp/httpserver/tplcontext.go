@@ -31,7 +31,7 @@ import (
 
 	"os"
 
-	"github.com/mholt/caddy/caddytls"
+	"github.com/journeymidnight/yig-front-caddy/caddytls"
 	"github.com/russross/blackfriday"
 )
 

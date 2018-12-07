@@ -21,7 +21,7 @@ import (
 	"path"
 	"time"
 
-	"github.com/mholt/caddy"
+	"github.com/journeymidnight/yig-front-caddy"
 )
 
 func init() {

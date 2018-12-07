@@ -25,7 +25,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/mholt/caddy/caddyhttp/httpserver"
+	"github.com/journeymidnight/yig-front-caddy/caddyhttp/httpserver"
 	"github.com/russross/blackfriday"
 )
 

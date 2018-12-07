@@ -21,7 +21,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/mholt/caddy"
+	"github.com/journeymidnight/yig-front-caddy"
 
 	"golang.org/x/crypto/ocsp"
 )

@@ -28,7 +28,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/mholt/caddy/telemetry"
+	"github.com/journeymidnight/yig-front-caddy/telemetry"
 	"github.com/xenolf/lego/acme"
 )
 

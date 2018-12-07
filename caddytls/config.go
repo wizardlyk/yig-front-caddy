@@ -25,7 +25,7 @@ import (
 	"strings"
 
 	"github.com/klauspost/cpuid"
-	"github.com/mholt/caddy"
+	"github.com/journeymidnight/yig-front-caddy"
 	"github.com/xenolf/lego/acme"
 )
 

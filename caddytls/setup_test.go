@@ -21,7 +21,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/mholt/caddy"
+	"github.com/journeymidnight/yig-front-caddy"
 	"github.com/xenolf/lego/acme"
 )
 

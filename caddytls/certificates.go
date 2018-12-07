@@ -26,7 +26,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mholt/caddy/telemetry"
+	"github.com/journeymidnight/yig-front-caddy/telemetry"
 	"golang.org/x/crypto/ocsp"
 )
 

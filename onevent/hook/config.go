@@ -1,7 +1,7 @@
 package hook
 
 import (
-	"github.com/mholt/caddy"
+	"github.com/journeymidnight/yig-front-caddy"
 )
 
 // Config describes how Hook should be configured and used.
