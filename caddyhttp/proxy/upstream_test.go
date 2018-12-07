@@ -29,8 +29,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lucas-clemente/quic-go/h2quic"
 	"github.com/journeymidnight/yig-front-caddy/caddyfile"
+	"github.com/lucas-clemente/quic-go/h2quic"
 )
 
 func TestNewHost(t *testing.T) {

@@ -32,11 +32,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lucas-clemente/quic-go/h2quic"
 	"github.com/journeymidnight/yig-front-caddy"
 	"github.com/journeymidnight/yig-front-caddy/caddyhttp/staticfiles"
 	"github.com/journeymidnight/yig-front-caddy/caddytls"
 	"github.com/journeymidnight/yig-front-caddy/telemetry"
+	"github.com/lucas-clemente/quic-go/h2quic"
 )
 
 // Server is the HTTP server implementation.

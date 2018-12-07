@@ -38,9 +38,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lucas-clemente/quic-go/h2quic"
 	"github.com/journeymidnight/yig-front-caddy/caddyfile"
 	"github.com/journeymidnight/yig-front-caddy/caddyhttp/httpserver"
+	"github.com/lucas-clemente/quic-go/h2quic"
 
 	"golang.org/x/net/websocket"
 )

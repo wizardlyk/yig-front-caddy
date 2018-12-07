@@ -39,9 +39,9 @@ import (
 
 	"golang.org/x/net/http2"
 
+	"github.com/journeymidnight/yig-front-caddy/caddyhttp/httpserver"
 	"github.com/lucas-clemente/quic-go"
 	"github.com/lucas-clemente/quic-go/h2quic"
-	"github.com/journeymidnight/yig-front-caddy/caddyhttp/httpserver"
 )
 
 var (

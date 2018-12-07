@@ -29,10 +29,10 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/klauspost/cpuid"
 	"github.com/journeymidnight/yig-front-caddy"
 	"github.com/journeymidnight/yig-front-caddy/caddytls"
 	"github.com/journeymidnight/yig-front-caddy/telemetry"
+	"github.com/klauspost/cpuid"
 	"github.com/xenolf/lego/acme"
 	"gopkg.in/natefinch/lumberjack.v2"
 

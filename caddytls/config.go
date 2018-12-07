@@ -24,8 +24,8 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/klauspost/cpuid"
 	"github.com/journeymidnight/yig-front-caddy"
+	"github.com/klauspost/cpuid"
 	"github.com/xenolf/lego/acme"
 )
 
