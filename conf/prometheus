@@ -1,0 +1,4 @@
+prometheus {
+    s3_endpoint s3.test.com
+    address 127.0.0.1:4040
+}

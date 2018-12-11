@@ -35,6 +35,7 @@ import (
 	_ "github.com/journeymidnight/yig-front-caddy/caddyhttp/markdown"
 	_ "github.com/journeymidnight/yig-front-caddy/caddyhttp/mime"
 	_ "github.com/journeymidnight/yig-front-caddy/caddyhttp/pprof"
+	_ "github.com/journeymidnight/yig-front-caddy/caddyhttp/prometheus"
 	_ "github.com/journeymidnight/yig-front-caddy/caddyhttp/proxy"
 	_ "github.com/journeymidnight/yig-front-caddy/caddyhttp/push"
 	_ "github.com/journeymidnight/yig-front-caddy/caddyhttp/redirect"

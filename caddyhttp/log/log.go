@@ -34,10 +34,9 @@ func init() {
 
 // Logger is a basic request logging middleware.
 type Logger struct {
-	Next       httpserver.Handler
-	Rules      []*Rule
-	S3Endpoint string
-	ErrorFunc  func(http.ResponseWriter, *http.Request, int) // failover error handler
+	Next      httpserver.Handler
+	Rules     []*Rule
+	ErrorFunc func(http.ResponseWriter, *http.Request, int) // failover error handler
 }
 
 func (l Logger) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error) {
@@ -49,8 +48,6 @@ func (l Logger) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error) {
 			// Attach the Replacer we'll use so that other middlewares can
 			// set their own placeholders if they want to.
 			rep := httpserver.NewReplacer(r, responseRecorder, CommonLogEmptyValue)
-			bucketName , _ := getBucketAndObjectInfoFromRequest(l.S3Endpoint, r)
-			rep.Set("bucket_name", bucketName)
 			responseRecorder.Replacer = rep
 
 			// Bon voyage, request!

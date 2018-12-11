@@ -245,6 +245,7 @@ type Plugin struct {
 // the directive that invokes it. A name is always required
 // and must be unique for the server type.
 func RegisterPlugin(name string, plugin Plugin) {
+	fmt.Println("Regist plugin:", name)
 	if name == "" {
 		panic("plugin must have a name")
 	}

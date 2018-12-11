@@ -25,3 +25,4 @@ caddy/Caddyfile
 caddy/mime.types
 caddy/access.log
 caddy/error.log
+caddy/prometheus
