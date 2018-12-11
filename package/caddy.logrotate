@@ -1,0 +1,19 @@
+compress
+/var/log/caddy/access.log {
+    daily
+    rotate 7
+    missingok
+    compress
+    minsize 100k
+    copytruncate
+}
+
+/var/log/caddy/error.log {
+    daily
+    rotate 7
+    missingok
+    compress
+    minsize 100k
+    copytruncate
+}
+

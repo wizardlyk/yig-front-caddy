@@ -1,0 +1,93 @@
+*.s3.test.com:443 https://s3.test.com {
+    import mime.types
+    import prometheus
+
+    tls /tmp/cert/s3.test.com+1.pem /tmp/cert/s3.test.com+1-key.pem
+
+    log / access.log "{combined}" {
+        rotate_size 50  # Rotate after 50 MB
+        rotate_age  90  # Keep rotated files for 90 days
+        rotate_keep 20  # Keep at most 20 log files
+        rotate_compress # Compress rotated log files in gzip format
+    }
+
+    errors error.log {
+        rotate_size 50  # Rotate after 50 MB
+        rotate_age  90  # Keep rotated files for 90 days
+        rotate_keep 20  # Keep at most 20 log files
+        rotate_compress # Compress rotated log files in gzip format
+    }
+
+    limits {
+        body / 128mb
+    }
+
+    # timeouts 1m
+
+    gzip
+
+    rewrite {
+        if {?x-oss-process} not ""
+        to /cropimage/{host}{path}
+    }
+
+    proxy / http://127.0.0.1:8080 {
+		header_upstream Host {host}
+        header_upstream X-Real-IP {remote}
+        header_upstream X-Forwarded-For {remote}
+        header_upstream X-Forwarded-Proto {scheme}
+	}
+
+	proxy /cropimage http://127.0.0.1:9001 {
+	    without /cropimage
+	    transparent
+	}
+}
+
+*.s3.test.com:80 http://s3.test.com {
+    import mime.types
+    import prometheus
+
+    log / access.log "{combined}" {
+        rotate_size 50  # Rotate after 50 MB
+        rotate_age  90  # Keep rotated files for 90 days
+        rotate_keep 20  # Keep at most 20 log files
+        rotate_compress # Compress rotated log files in gzip format
+    }
+
+    errors error.log {
+        rotate_size 50  # Rotate after 50 MB
+        rotate_age  90  # Keep rotated files for 90 days
+        rotate_keep 20  # Keep at most 20 log files
+        rotate_compress # Compress rotated log files in gzip format
+    }
+
+    limits {
+        body / 128mb
+    }
+
+    timeouts {
+	header 60s
+    } 
+
+    gzip
+
+    rewrite {
+        if {?x-oss-process} not ""
+        to /cropimage/{host}{path}
+    }
+
+    proxy / http://127.0.0.1:8080 {
+		header_upstream Host {host}
+        header_upstream X-Real-IP {remote}
+        header_upstream X-Forwarded-For {remote}
+        header_upstream X-Forwarded-Proto {scheme}
+	}
+
+	proxy /cropimage http://127.0.0.1:9001 {
+	    without /cropimage
+	    transparent
+	}
+}
+
+

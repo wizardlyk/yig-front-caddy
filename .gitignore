@@ -4,6 +4,8 @@ _gitignore/
 Vagrantfile
 .vagrant/
 /.idea
+*.rpm
+rpm-build/
 
 dist/builds/
 dist/release/
