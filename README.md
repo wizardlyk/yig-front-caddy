@@ -71,8 +71,8 @@ Caddy binaries have no dependencies and are available for every platform. Get Ca
 
 To build from source you need **[Git](https://git-scm.com/downloads)** and **[Go](https://golang.org/doc/install)** (1.10 or newer). Follow these instruction for fast building:
 
-- Get the source with `go get github.com/mholt/caddy/caddy` and then run `go get github.com/caddyserver/builds`
-- Now `cd $GOPATH/src/github.com/mholt/caddy/caddy` and run `go run build.go`
+- Get the source with `go get github.com/journeymidnight/yig-front-caddy` and then run `go get github.com/caddyserver/builds`
+- Now `cd $GOPATH/src/github.com/journeymidnight/yig-front-caddy/caddy` and run `go run build.go`
 
 Then make sure the `caddy` binary is in your PATH.
 
