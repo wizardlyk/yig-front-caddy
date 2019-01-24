@@ -20,7 +20,7 @@
 </p>
 
 ---
-
+[![Build Status](https://travis-ci.org/journeymidnight/yig-front-caddy.svg?branch=master)](https://travis-ci.org/journeymidnight/yig-front-caddy)
 Caddy is a **production-ready** open-source web server that is fast, easy to use, and makes you more productive.
 
 Available for Windows, Mac, Linux, BSD, Solaris, and [Android](https://github.com/mholt/caddy/wiki/Running-Caddy-on-Android).
