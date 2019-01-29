@@ -82,8 +82,8 @@ func (m *Metrics) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error)
 		isInternal = "y"
 	}
 
-	//bucketOwner := getBucketOwnerFromRequest("MunVJU9Em4pszZYX")
-	bucketOwner := getBucketOwnerFromRequest(m.ak)
+	bucketOwner := getBucketOwnerFromRequest("MunVJU9Em4pszZYX")
+	//bucketOwner := getBucketOwnerFromRequest(m.ak)
 	if strings.TrimSpace(bucketOwner) == "" {
 		bucketOwner = "-"
 	}

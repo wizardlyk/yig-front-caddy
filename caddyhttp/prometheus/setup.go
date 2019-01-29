@@ -34,8 +34,7 @@ type Metrics struct {
 	hostname     string
 	path         string
 	s3Endpoint   string
-
-	ak           string
+	//ak           string
 
 	// subsystem?
 	once sync.Once
