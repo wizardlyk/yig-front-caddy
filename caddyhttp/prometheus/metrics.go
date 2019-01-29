@@ -65,7 +65,7 @@ func define(subsystem string) {
 
 	// prometheus exporter
 	var labels []string
-	labels = append(labels, "bucket_name", "method", "status", "internal")
+	labels = append(labels, "bucket_name", "method", "status", "internal","bucket_owner")
 
 	countTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "nginx",

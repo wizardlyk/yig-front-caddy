@@ -1,6 +1,9 @@
 package prometheus
 
 import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"strconv"
@@ -79,7 +82,13 @@ func (m *Metrics) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error)
 		isInternal = "y"
 	}
 
-	labelValues = append(labelValues, bucketName, r.Method, statusStr, isInternal)
+	//bucketOwner := getBucketOwnerFromRequest("MunVJU9Em4pszZYX")
+	bucketOwner := getBucketOwnerFromRequest(m.ak)
+	if strings.TrimSpace(bucketOwner) == "" {
+		bucketOwner = "-"
+	}
+
+	labelValues = append(labelValues, bucketName, r.Method, statusStr, isInternal, bucketOwner)
 	countTotal.WithLabelValues(labelValues...).Inc()
 	bytesTotal.WithLabelValues(labelValues...).Add(float64(rw.Size()))
 
@@ -132,6 +141,33 @@ func getBucketAndObjectInfoFromRequest(s3Endpoint string, r *http.Request) (buck
 		}
 	}
 	return
+}
+
+func getBucketOwnerFromRequest(ak string) (bucketOwner string) {
+	resp, err := http.Get("https://unicloud.com:12011/iam/v1/access/" + ak)
+	body, err := ioutil.ReadAll(resp.Body)
+	fmt.Println("body:", string(body))
+	fmt.Println("error:", err)
+
+	var respBody respBody
+	json.Unmarshal([]byte(string(body)), &respBody)
+	userId := respBody.UserId
+
+	fmt.Println("jsonBody:", respBody)
+	fmt.Println("user_id:", respBody.UserId)
+	resp.Body.Close()
+	return userId
+}
+
+type respBody struct {
+	AccessKey    string `json:"access_key"`
+	AccessSecret string `json:"access_secret"`
+	UserId       string `json:"user_id"`
+	ProjectId    string `json:"project_id"`
+	ProjectName  string `json:"project_name"`
+	CreateAt     string `json:"create_at"`
+	ExpiredAt    string `json:"expired_at"`
+	Enabled      string `json:"enabled"`
 }
 
 // A timedResponseWriter tracks the time when the first response write
