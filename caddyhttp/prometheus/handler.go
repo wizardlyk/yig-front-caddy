@@ -3,6 +3,7 @@ package prometheus
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/dgrijalva/jwt-go"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -82,8 +83,7 @@ func (m *Metrics) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error)
 		isInternal = "y"
 	}
 
-	bucketOwner := getBucketOwnerFromRequest("MunVJU9Em4pszZYX")
-	//bucketOwner := getBucketOwnerFromRequest(m.ak)
+	bucketOwner := getBucketOwnerFromRequest("happy")
 	if strings.TrimSpace(bucketOwner) == "" {
 		bucketOwner = "-"
 	}
@@ -143,31 +143,77 @@ func getBucketAndObjectInfoFromRequest(s3Endpoint string, r *http.Request) (buck
 	return
 }
 
-func getBucketOwnerFromRequest(ak string) (bucketOwner string) {
-	resp, err := http.Get("https://unicloud.com:12011/iam/v1/access/" + ak)
-	body, err := ioutil.ReadAll(resp.Body)
-	fmt.Println("body:", string(body))
-	fmt.Println("error:", err)
+var client = &http.Client{}
 
-	var respBody respBody
+func getBucketOwnerFromRequest(bucket string) (bucketOwner string) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"bucket": bucket,
+	})
+
+	tokenString, err := token.SignedString([]byte("secret"))
+
+	if err == nil {
+		//go use token
+		fmt.Printf("\nHS256 = %v\n", tokenString)
+	} else {
+		fmt.Println("internal error", err)
+		return
+	}
+
+	url := "http://s3.test.com:9000/admin/bucket"
+	request, _ := http.NewRequest("GET", url, nil)
+	request.Header.Set("Authorization", "Bearer "+tokenString)
+	response, _ := client.Do(request)
+	if response.StatusCode != 200 {
+		fmt.Println("getBucketInfo failed as status != 200", response.StatusCode)
+		return
+	}
+
+	defer response.Body.Close()
+	body, _ := ioutil.ReadAll(response.Body)
+
+	var respBody RespBody
 	json.Unmarshal([]byte(string(body)), &respBody)
-	userId := respBody.UserId
-
-	fmt.Println("jsonBody:", respBody)
-	fmt.Println("user_id:", respBody.UserId)
-	resp.Body.Close()
-	return userId
+	fmt.Println("respBody:", respBody)
+	fmt.Println("Bucket:", respBody.Bucket)
+	bucketOwner = respBody.Bucket.OwnerId
+	fmt.Println("BucketOwner:", bucketOwner)
+	return bucketOwner
 }
 
-type respBody struct {
-	AccessKey    string `json:"access_key"`
-	AccessSecret string `json:"access_secret"`
-	UserId       string `json:"user_id"`
-	ProjectId    string `json:"project_id"`
-	ProjectName  string `json:"project_name"`
-	CreateAt     string `json:"create_at"`
-	ExpiredAt    string `json:"expired_at"`
-	Enabled      string `json:"enabled"`
+type RespBody struct {
+	Bucket Bucket `json:"Bucket"`
+}
+type Bucket struct {
+	Name       string `json:"Name"`
+	CreateTime string `json:"CreateTime"`
+	OwnerId    string `json:"OwnerId"`
+	CORS       CORS   `json:"CORS"`
+	ACL        ACL    `json:"ACL"`
+	LC         LC     `json:"LC"`
+	Policy     Policy `json:"Policy"`
+	Versioning string `json:"Versioning"`
+	Usage      string `json:"Usage"`
+}
+type CORS struct {
+	CorsRules string `json:"CorsRules"`
+}
+type ACL struct {
+	CannedAcl string `json:"CannedAcl"`
+}
+type LC struct {
+	xMLName XMLName `json:"XMLName"`
+	rule    string  `json:"Rule"`
+}
+
+type XMLName struct {
+	space string `json:"Space"`
+	local string `json:"Local"`
+}
+
+type Policy struct {
+	version   string `json:"Version"`
+	statement string `json:"Statement"`
 }
 
 // A timedResponseWriter tracks the time when the first response write
