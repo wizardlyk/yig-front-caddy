@@ -1,9 +1,11 @@
 package prometheus
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
+	"github.com/journeymidnight/yig/circuitbreak"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -84,9 +86,9 @@ func (m *Metrics) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error)
 	}
 
 	bucketOwner := getBucketOwnerFromRequest(bucketName, m.url)
-	//if strings.TrimSpace(bucketOwner) == "" {
-	//	bucketOwner = "-"
-	//}
+	if strings.TrimSpace(bucketOwner) == "" {
+		bucketOwner = "-"
+	}
 
 	labelValues = append(labelValues, bucketName, r.Method, statusStr, isInternal, bucketOwner)
 	countTotal.WithLabelValues(labelValues...).Inc()
@@ -146,7 +148,6 @@ func getBucketAndObjectInfoFromRequest(s3Endpoint string, r *http.Request) (buck
 var client = &http.Client{}
 
 func getBucketOwnerFromRequest(bucketName string, yigUrl string) (bucketOwner string) {
-	//url := "http://s3.test.com:9000/admin/bucket"
 
 	if bucketName == "-" {
 		bucketOwner = "-"
@@ -169,20 +170,38 @@ func getBucketOwnerFromRequest(bucketName string, yigUrl string) (bucketOwner st
 	//1
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Println("panic recover,request err: \n", err)
+			fmt.Println("panic recover!!!")
+			fmt.Println(" request err: \n", err)
 		}
 	}()
 	request, err := http.NewRequest("GET", yigUrl, nil)
-
 	request.Header.Set("Authorization", "Bearer "+tokenString)
 
 	//2
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Println("panic recover,response err: \n", err)
+			fmt.Println("panic recover!!!")
+			fmt.Println("response err: \n", err)
 		}
 	}()
-	response, err := client.Do(request)
+
+	CacheCircuit := circuitbreak.NewCacheCircuit()
+	response := new(http.Response)
+
+	circuitErr := CacheCircuit.Execute(
+		context.Background(),
+		func(ctx context.Context) error {
+			response, err = client.Do(request)
+			if err != nil {
+				fmt.Println("err:", err, "\n admin circuit is open now!")
+			}
+			return nil
+		},
+		nil,
+	)
+	if circuitErr != nil {
+		fmt.Println("circuit is error")
+	}
 
 	if response.StatusCode != 200 {
 		fmt.Println("getBucketInfo failed as status != 200", response.StatusCode)
@@ -193,7 +212,8 @@ func getBucketOwnerFromRequest(bucketName string, yigUrl string) (bucketOwner st
 	//3
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Println("panic recover,io err: \n", err)
+			fmt.Println("panic recover!!!")
+			fmt.Println("io err: \n", err)
 		}
 	}()
 	body, err := ioutil.ReadAll(response.Body)
