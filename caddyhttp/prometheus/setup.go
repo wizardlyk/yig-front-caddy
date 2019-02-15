@@ -35,7 +35,7 @@ type Metrics struct {
 	path         string
 	s3Endpoint   string
 	//ak           string
-	url string
+	yigUrl string
 
 	// subsystem?
 	once sync.Once
@@ -180,7 +180,7 @@ func parse(c *caddy.Controller) (*Metrics, error) {
 				if len(args) != 1 {
 					return nil, c.ArgErr()
 				}
-				metrics.url = args[0]
+				metrics.yigUrl = args[0]
 			default:
 				return nil, c.Errf("prometheus: unknown item: %s", c.Val())
 			}

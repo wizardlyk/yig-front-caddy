@@ -193,7 +193,8 @@ func getBucketOwnerFromRequest(bucketName string, yigUrl string) (bucketOwner st
 		func(ctx context.Context) error {
 			response, err = client.Do(request)
 			if err != nil {
-				fmt.Println("err:", err, "\n admin circuit is open now!")
+				fmt.Println("err:", err)
+				fmt.Println("\n admin circuit is open now!")
 			}
 			return nil
 		},
