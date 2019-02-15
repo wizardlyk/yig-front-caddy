@@ -83,10 +83,10 @@ func (m *Metrics) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error)
 		isInternal = "y"
 	}
 
-	bucketOwner := getBucketOwnerFromRequest("happy")
-	if strings.TrimSpace(bucketOwner) == "" {
-		bucketOwner = "-"
-	}
+	bucketOwner := getBucketOwnerFromRequest(bucketName, m.url)
+	//if strings.TrimSpace(bucketOwner) == "" {
+	//	bucketOwner = "-"
+	//}
 
 	labelValues = append(labelValues, bucketName, r.Method, statusStr, isInternal, bucketOwner)
 	countTotal.WithLabelValues(labelValues...).Inc()
@@ -145,13 +145,19 @@ func getBucketAndObjectInfoFromRequest(s3Endpoint string, r *http.Request) (buck
 
 var client = &http.Client{}
 
-func getBucketOwnerFromRequest(bucket string) (bucketOwner string) {
+func getBucketOwnerFromRequest(bucketName string, yigUrl string) (bucketOwner string) {
+	//url := "http://s3.test.com:9000/admin/bucket"
+
+	if bucketName == "-" {
+		bucketOwner = "-"
+		return bucketOwner
+	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"bucket": bucket,
+		"bucket": bucketName,
 	})
 
+	//0
 	tokenString, err := token.SignedString([]byte("secret"))
-
 	if err == nil {
 		//go use token
 		fmt.Printf("\nHS256 = %v\n", tokenString)
@@ -160,24 +166,41 @@ func getBucketOwnerFromRequest(bucket string) (bucketOwner string) {
 		return
 	}
 
-	url := "http://s3.test.com:9000/admin/bucket"
-	request, _ := http.NewRequest("GET", url, nil)
+	//1
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Println("panic recover,request err: \n", err)
+		}
+	}()
+	request, err := http.NewRequest("GET", yigUrl, nil)
+
 	request.Header.Set("Authorization", "Bearer "+tokenString)
-	response, _ := client.Do(request)
+
+	//2
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Println("panic recover,response err: \n", err)
+		}
+	}()
+	response, err := client.Do(request)
+
 	if response.StatusCode != 200 {
 		fmt.Println("getBucketInfo failed as status != 200", response.StatusCode)
 		return
 	}
-
 	defer response.Body.Close()
-	body, _ := ioutil.ReadAll(response.Body)
+
+	//3
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Println("panic recover,io err: \n", err)
+		}
+	}()
+	body, err := ioutil.ReadAll(response.Body)
 
 	var respBody RespBody
 	json.Unmarshal([]byte(string(body)), &respBody)
-	fmt.Println("respBody:", respBody)
-	fmt.Println("Bucket:", respBody.Bucket)
 	bucketOwner = respBody.Bucket.OwnerId
-	fmt.Println("BucketOwner:", bucketOwner)
 	return bucketOwner
 }
 
@@ -202,18 +225,18 @@ type ACL struct {
 	CannedAcl string `json:"CannedAcl"`
 }
 type LC struct {
-	xMLName XMLName `json:"XMLName"`
-	rule    string  `json:"Rule"`
+	XMLName XMLName `json:"XMLName"`
+	Rule    string  `json:"Rule"`
 }
 
 type XMLName struct {
-	space string `json:"Space"`
-	local string `json:"Local"`
+	Space string `json:"Space"`
+	Local string `json:"Local"`
 }
 
 type Policy struct {
-	version   string `json:"Version"`
-	statement string `json:"Statement"`
+	Version   string `json:"Version"`
+	Statement string `json:"Statement"`
 }
 
 // A timedResponseWriter tracks the time when the first response write

@@ -26,3 +26,6 @@ caddy/mime.types
 caddy/access.log
 caddy/error.log
 caddy/prometheus
+
+caddy/*.pem
+caddy/*.key

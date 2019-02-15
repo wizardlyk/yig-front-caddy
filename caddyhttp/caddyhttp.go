@@ -46,6 +46,6 @@ import (
 	_ "github.com/journeymidnight/yig-front-caddy/caddyhttp/templates"
 	_ "github.com/journeymidnight/yig-front-caddy/caddyhttp/timeouts"
 	_ "github.com/journeymidnight/yig-front-caddy/caddyhttp/websocket"
-	_ "github.com/journeymidnight/yig-front-caddy/caddyhttp/yig"
+	//_ "github.com/journeymidnight/yig-front-caddy/caddyhttp/yig"
 	_ "github.com/journeymidnight/yig-front-caddy/onevent"
 )

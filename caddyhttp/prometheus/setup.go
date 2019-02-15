@@ -35,6 +35,7 @@ type Metrics struct {
 	path         string
 	s3Endpoint   string
 	//ak           string
+	url string
 
 	// subsystem?
 	once sync.Once
@@ -174,6 +175,12 @@ func parse(c *caddy.Controller) (*Metrics, error) {
 					return nil, c.Err("prometheus: address and use_caddy_addr options may not be used together")
 				}
 				metrics.useCaddyAddr = true
+			case "yig_url":
+				args = c.RemainingArgs()
+				if len(args) != 1 {
+					return nil, c.ArgErr()
+				}
+				metrics.url = args[0]
 			default:
 				return nil, c.Errf("prometheus: unknown item: %s", c.Val())
 			}
