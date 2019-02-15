@@ -85,7 +85,7 @@ func (m *Metrics) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error)
 		isInternal = "y"
 	}
 
-	bucketOwner := getBucketOwnerFromRequest(bucketName, m.url)
+	bucketOwner := getBucketOwnerFromRequest(bucketName, m.yigUrl)
 	if strings.TrimSpace(bucketOwner) == "" {
 		bucketOwner = "-"
 	}
@@ -171,7 +171,7 @@ func getBucketOwnerFromRequest(bucketName string, yigUrl string) (bucketOwner st
 	defer func() {
 		if err := recover(); err != nil {
 			fmt.Println("panic recover!!!")
-			fmt.Println(" request err: \n", err)
+			fmt.Println("request err: \n", err)
 		}
 	}()
 	request, err := http.NewRequest("GET", yigUrl, nil)
@@ -194,7 +194,7 @@ func getBucketOwnerFromRequest(bucketName string, yigUrl string) (bucketOwner st
 			response, err = client.Do(request)
 			if err != nil {
 				fmt.Println("err:", err)
-				fmt.Println("\n admin circuit is open now!")
+				fmt.Println("admin circuit is open now!")
 			}
 			return nil
 		},
