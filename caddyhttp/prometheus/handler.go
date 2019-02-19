@@ -3,18 +3,98 @@ package prometheus
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/dgrijalva/jwt-go"
-	"github.com/journeymidnight/yig/circuitbreak"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/journeymidnight/yig-front-caddy/caddyhttp/circuitbreak"
 	"github.com/journeymidnight/yig-front-caddy/caddyhttp/httpserver"
 )
+
+var syncMap sync.Map
+
+type Cache interface {
+	Put(key interface{}, value interface{}, lifeTime time.Duration) error
+	Get(key interface{}) interface{}
+}
+
+type Item struct {
+	Value      interface{}
+	createTime time.Time
+	lifeTime   time.Duration
+}
+
+type MemoryCache struct {
+	sync.RWMutex
+	duration time.Duration
+}
+
+func (mc *MemoryCache) Put(key interface{}, value interface{}, lifeTime time.Duration) error {
+	syncMap.Store(key, Item{
+		Value:      value,
+		createTime: time.Now(),
+		lifeTime:   lifeTime,
+	})
+	return nil
+}
+
+func (mc *MemoryCache) Get(key interface{}) interface{} {
+	if e, ok := syncMap.Load(key); ok {
+		return e.(Item).Value
+	}
+	return nil
+}
+
+func (e *Item) isExpire() bool {
+	if e.lifeTime == 0 {
+		return false
+	}
+	return time.Now().Sub(e.createTime) > e.lifeTime
+}
+
+func (mc *MemoryCache) StartTimerGC() error {
+	go mc.checkAndClearExpire()
+	return nil
+}
+
+//Detects and clears expired elements
+func (mc *MemoryCache) checkAndClearExpire() {
+	for {
+		<-time.After(mc.duration)
+		if keys := mc.expireKeys(); len(keys) != 0 {
+			mc.clearItems(keys)
+		}
+	}
+}
+
+//Use expired elements to clean up the cache
+func (mc *MemoryCache) clearItems(keys []interface{}) {
+	mc.Lock()
+	defer mc.Unlock()
+	for _, key := range keys {
+		syncMap.Delete(key)
+	}
+}
+
+//Gets the expired key
+func (mc *MemoryCache) expireKeys() (keys []interface{}) {
+	mc.RLock()
+	defer mc.RUnlock()
+	item := Item{}
+	syncMap.Range(func(key, value interface{}) bool {
+		item = value.(Item)
+		if item.isExpire() {
+			keys = append(keys, key)
+		}
+		return true
+	})
+	return
+}
 
 func (m *Metrics) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error) {
 	next := m.next
@@ -148,7 +228,6 @@ func getBucketAndObjectInfoFromRequest(s3Endpoint string, r *http.Request) (buck
 var client = &http.Client{}
 
 func getBucketOwnerFromRequest(bucketName string, yigUrl string) (bucketOwner string) {
-
 	if bucketName == "-" {
 		bucketOwner = "-"
 		return bucketOwner
@@ -157,72 +236,40 @@ func getBucketOwnerFromRequest(bucketName string, yigUrl string) (bucketOwner st
 		"bucket": bucketName,
 	})
 
-	//0
 	tokenString, err := token.SignedString([]byte("secret"))
-	if err == nil {
-		//go use token
-		fmt.Printf("\nHS256 = %v\n", tokenString)
-	} else {
-		fmt.Println("internal error", err)
-		return
-	}
+	checkError(err)
 
-	//1
-	defer func() {
-		if err := recover(); err != nil {
-			fmt.Println("panic recover!!!")
-			fmt.Println("request err: \n", err)
-		}
-	}()
 	request, err := http.NewRequest("GET", yigUrl, nil)
 	request.Header.Set("Authorization", "Bearer "+tokenString)
 
-	//2
-	defer func() {
-		if err := recover(); err != nil {
-			fmt.Println("panic recover!!!")
-			fmt.Println("response err: \n", err)
-		}
-	}()
-
 	CacheCircuit := circuitbreak.NewCacheCircuit()
 	response := new(http.Response)
-
 	circuitErr := CacheCircuit.Execute(
 		context.Background(),
 		func(ctx context.Context) error {
 			response, err = client.Do(request)
-			if err != nil {
-				fmt.Println("err:", err)
-				fmt.Println("admin circuit is open now!")
-			}
+			checkError(err)
 			return nil
 		},
 		nil,
 	)
-	if circuitErr != nil {
-		fmt.Println("circuit is error")
-	}
+	checkError(circuitErr)
 
-	if response.StatusCode != 200 {
-		fmt.Println("getBucketInfo failed as status != 200", response.StatusCode)
-		return
-	}
 	defer response.Body.Close()
-
-	//3
-	defer func() {
-		if err := recover(); err != nil {
-			fmt.Println("panic recover!!!")
-			fmt.Println("io err: \n", err)
-		}
-	}()
 	body, err := ioutil.ReadAll(response.Body)
+	checkError(err)
 
 	var respBody RespBody
-	json.Unmarshal([]byte(string(body)), &respBody)
+	json.Unmarshal(body, &respBody)
 	bucketOwner = respBody.Bucket.OwnerId
 	return bucketOwner
+}
+
+func checkError(err error) error {
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 type RespBody struct {
