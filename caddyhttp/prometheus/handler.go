@@ -242,9 +242,9 @@ func getBucketOwnerFromRequest(bucketName string, yigUrl string) (bucketOwner st
 	request, err := http.NewRequest("GET", yigUrl, nil)
 	request.Header.Set("Authorization", "Bearer "+tokenString)
 
-	CacheCircuit := circuitbreak.NewCacheCircuit()
+	AdminServiceCircuit := circuitbreak.NewAdminServiceCircuit()
 	response := new(http.Response)
-	circuitErr := CacheCircuit.Execute(
+	circuitErr := AdminServiceCircuit.Execute(
 		context.Background(),
 		func(ctx context.Context) error {
 			response, err = client.Do(request)

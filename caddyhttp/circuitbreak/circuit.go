@@ -8,11 +8,11 @@ import (
 )
 
 var (
-	CacheCircuitIsOpenErr = errors.New("adminService circuit is open now!")
+	adminServiceCircuitIsOpenErr = errors.New("adminService circuit is open now!")
 )
 
-func NewCacheCircuit() *circuit.Circuit {
-	return circuit.NewCircuitFromConfig("AdminCache",circuit.Config{
+func NewAdminServiceCircuit() *circuit.Circuit {
+	return circuit.NewCircuitFromConfig("AdminService",circuit.Config{
 		General:circuit.GeneralConfig{
 			OpenToClosedFactory:hystrix.CloserFactory(hystrix.ConfigureCloser{
 				SleepWindow:30,
