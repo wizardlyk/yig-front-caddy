@@ -84,9 +84,8 @@ func (mc *MemoryCache) clearItems(keys []interface{}) {
 func (mc *MemoryCache) expireKeys() (keys []interface{}) {
 	mc.RLock()
 	defer mc.RUnlock()
-	item := Item{}
 	mc.syncMap.Range(func(key, value interface{}) bool {
-		item = value.(Item)
+		item := value.(Item)
 		if item.isExpire() {
 			keys = append(keys, key)
 		}
@@ -228,7 +227,11 @@ func getBucketAndObjectInfoFromRequest(s3Endpoint string, r *http.Request) (buck
 }
 
 var client = &http.Client{}
-var mc = MemoryCache{}
+var mc = MemoryCache{
+	sync.Map{},
+	sync.RWMutex{},
+	time.Hour * 1,
+}
 
 func getBucketOwnerFromRequest(bucketName string, yigUrl string) (bucketOwner string, err error) {
 	if bucketName == "-" {

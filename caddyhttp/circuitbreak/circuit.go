@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	adminServiceCircuitIsOpenErr = errors.New("adminService circuit is open now!")
+	ErrAdminServiceCircuitIsOpen = errors.New("adminService circuit is open now!")
 )
 
 func NewAdminServiceCircuit() *circuit.Circuit {
