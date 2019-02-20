@@ -16,8 +16,6 @@ import (
 	"github.com/journeymidnight/yig-front-caddy/caddyhttp/httpserver"
 )
 
-var syncMap sync.Map
-
 type Cache interface {
 	Put(key interface{}, value interface{}, lifeTime time.Duration) error
 	Get(key interface{}) interface{}
@@ -30,12 +28,13 @@ type Item struct {
 }
 
 type MemoryCache struct {
+	syncMap sync.Map
 	sync.RWMutex
 	duration time.Duration
 }
 
 func (mc *MemoryCache) Put(key interface{}, value interface{}, lifeTime time.Duration) error {
-	syncMap.Store(key, Item{
+	mc.syncMap.Store(key, Item{
 		Value:      value,
 		createTime: time.Now(),
 		lifeTime:   lifeTime,
@@ -43,11 +42,11 @@ func (mc *MemoryCache) Put(key interface{}, value interface{}, lifeTime time.Dur
 	return nil
 }
 
-func (mc *MemoryCache) Get(key interface{}) interface{} {
-	if e, ok := syncMap.Load(key); ok {
-		return e.(Item).Value
+func (mc *MemoryCache) Get(key interface{}) string {
+	if e, ok := mc.syncMap.Load(key); ok {
+		return e.(Item).Value.(string)
 	}
-	return nil
+	return ""
 }
 
 func (e *Item) isExpire() bool {
@@ -77,7 +76,7 @@ func (mc *MemoryCache) clearItems(keys []interface{}) {
 	mc.Lock()
 	defer mc.Unlock()
 	for _, key := range keys {
-		syncMap.Delete(key)
+		mc.syncMap.Delete(key)
 	}
 }
 
@@ -86,7 +85,7 @@ func (mc *MemoryCache) expireKeys() (keys []interface{}) {
 	mc.RLock()
 	defer mc.RUnlock()
 	item := Item{}
-	syncMap.Range(func(key, value interface{}) bool {
+	mc.syncMap.Range(func(key, value interface{}) bool {
 		item = value.(Item)
 		if item.isExpire() {
 			keys = append(keys, key)
@@ -165,9 +164,12 @@ func (m *Metrics) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error)
 		isInternal = "y"
 	}
 
-	bucketOwner := getBucketOwnerFromRequest(bucketName, m.yigUrl)
-	if strings.TrimSpace(bucketOwner) == "" {
-		bucketOwner = "-"
+	bucketOwner := mc.Get(bucketName)
+	if bucketOwner == "" {
+		bucketOwner, err = getBucketOwnerFromRequest(bucketName, m.yigUrl)
+		if strings.TrimSpace(bucketOwner) == "" {
+			bucketOwner = "-"
+		}
 	}
 
 	labelValues = append(labelValues, bucketName, r.Method, statusStr, isInternal, bucketOwner)
@@ -226,18 +228,21 @@ func getBucketAndObjectInfoFromRequest(s3Endpoint string, r *http.Request) (buck
 }
 
 var client = &http.Client{}
+var mc = MemoryCache{}
 
-func getBucketOwnerFromRequest(bucketName string, yigUrl string) (bucketOwner string) {
+func getBucketOwnerFromRequest(bucketName string, yigUrl string) (bucketOwner string, err error) {
 	if bucketName == "-" {
-		bucketOwner = "-"
-		return bucketOwner
+		return "", nil
 	}
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"bucket": bucketName,
 	})
 
 	tokenString, err := token.SignedString([]byte("secret"))
-	checkError(err)
+	if err != nil {
+		return "", err
+	}
 
 	request, err := http.NewRequest("GET", yigUrl, nil)
 	request.Header.Set("Authorization", "Bearer "+tokenString)
@@ -248,28 +253,29 @@ func getBucketOwnerFromRequest(bucketName string, yigUrl string) (bucketOwner st
 		context.Background(),
 		func(ctx context.Context) error {
 			response, err = client.Do(request)
-			checkError(err)
+			if err != nil {
+				return err
+			}
 			return nil
 		},
 		nil,
 	)
-	checkError(circuitErr)
+	if circuitErr != nil {
+		return "", err
+	}
 
 	defer response.Body.Close()
 	body, err := ioutil.ReadAll(response.Body)
-	checkError(err)
+	if err != nil {
+		return "", err
+	}
 
 	var respBody RespBody
 	json.Unmarshal(body, &respBody)
 	bucketOwner = respBody.Bucket.OwnerId
-	return bucketOwner
-}
 
-func checkError(err error) error {
-	if err != nil {
-		return err
-	}
-	return nil
+	mc.Put(bucketName, bucketOwner, time.Duration(30*time.Second))
+	return bucketOwner, nil
 }
 
 type RespBody struct {
