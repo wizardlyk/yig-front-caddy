@@ -94,7 +94,20 @@ func (mc *MemoryCache) expireKeys() (keys []interface{}) {
 	return
 }
 
+var mc = MemoryCache{
+	sync.Map{},
+	sync.RWMutex{},
+	0,
+}
+
 func (m *Metrics) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error) {
+	checkTimeCount, err := strconv.Atoi(m.checkTime)
+	checkTime := time.Duration(checkTimeCount) * time.Hour
+	mc.duration = checkTime
+
+	lifeTimeCount, err := strconv.Atoi(m.lifeTime)
+	lifeTime := time.Duration(lifeTimeCount) * time.Second
+
 	next := m.next
 
 	hostname := m.hostname
@@ -165,7 +178,7 @@ func (m *Metrics) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error)
 
 	bucketOwner := mc.Get(bucketName)
 	if bucketOwner == "" {
-		bucketOwner, err = getBucketOwnerFromRequest(bucketName, m.yigUrl)
+		bucketOwner, err = getBucketOwnerFromRequest(bucketName, m.yigUrl, time.Duration(lifeTime))
 		if strings.TrimSpace(bucketOwner) == "" {
 			bucketOwner = "-"
 		}
@@ -226,14 +239,8 @@ func getBucketAndObjectInfoFromRequest(s3Endpoint string, r *http.Request) (buck
 	return
 }
 
-var client = &http.Client{}
-var mc = MemoryCache{
-	sync.Map{},
-	sync.RWMutex{},
-	time.Hour * 1,
-}
-
-func getBucketOwnerFromRequest(bucketName string, yigUrl string) (bucketOwner string, err error) {
+func getBucketOwnerFromRequest(bucketName string, yigUrl string, lifeTime time.Duration) (bucketOwner string, err error) {
+	client := &http.Client{}
 	if bucketName == "-" {
 		return "", nil
 	}
@@ -277,7 +284,8 @@ func getBucketOwnerFromRequest(bucketName string, yigUrl string) (bucketOwner st
 	json.Unmarshal(body, &respBody)
 	bucketOwner = respBody.Bucket.OwnerId
 
-	mc.Put(bucketName, bucketOwner, time.Duration(30*time.Second))
+	//mc.Put(bucketName, bucketOwner, time.Duration(lifeTime))
+	mc.Put(bucketName, bucketOwner, lifeTime)
 	return bucketOwner, nil
 }
 

@@ -1,15 +1,14 @@
 package prometheus
 
 import (
-	"log"
-	"net/http"
-	"os"
-	"sync"
-
 	"github.com/journeymidnight/yig-front-caddy"
 	"github.com/journeymidnight/yig-front-caddy/caddyhttp/httpserver"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"log"
+	"net/http"
+	"os"
+	"sync"
 )
 
 func init() {
@@ -35,6 +34,8 @@ type Metrics struct {
 	path         string
 	s3Endpoint   string
 	yigUrl       string
+	lifeTime     string
+	checkTime    string
 	//ak           string
 
 	// subsystem?
@@ -181,6 +182,18 @@ func parse(c *caddy.Controller) (*Metrics, error) {
 					return nil, c.ArgErr()
 				}
 				metrics.yigUrl = args[0]
+			case "life_time":
+				args = c.RemainingArgs()
+				if len(args) != 1 {
+					return nil, c.ArgErr()
+				}
+				metrics.lifeTime = args[0]
+			case "check_time":
+				args = c.RemainingArgs()
+				if len(args) != 1 {
+					return nil, c.ArgErr()
+				}
+				metrics.checkTime = args[0]
 			default:
 				return nil, c.Errf("prometheus: unknown item: %s", c.Val())
 			}
